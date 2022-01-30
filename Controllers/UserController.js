@@ -13,38 +13,72 @@ class UserController{
         this.formEl.addEventListener("submit", e => {
             e.preventDefault();
 
+            let btnSubmit = this.formEl.querySelector("[type='submit']"); 
+            btnSubmit.disabled = true;
+
             let values = this.getValues();
             
-            // rewrite image 
-            values.photo = "";
+            // the Then method accepts two functions like arguments for to callback from resolve and reject  
+            this.getPhoto().then(
+                    (content) => { // Resolve
 
-            this.getPhoto();
+                        // Change value photo
+                        values.photo = content;
+                        
+                        // Add Line on table for each user
+                        this.AddLine(values);  
 
-            // Add Line on table for each user
-            this.AddLine(values);        
+                        // Restart fields form
+                        this.formEl.reset();
+                        
+                        // after add the line, activate submit button
+                        btnSubmit.disabled = false;   
+                }, // Reject
+                    e => {
+                        // Show error
+                        console.error(e);
+                }
+            );
+            
         });
 
     }
 
 
     getPhoto(){
-        // instance object FileReader 
-        let fileReader = new FileReader();
+        
+        // Promise because the filereader to use methods asynchronous, and promise return two states for result ok or reject
+        return new Promise((resolve, reject) => { 
+            
+            // instance object FileReader 
+            let fileReader = new FileReader();
 
-        let element = [...this.formEl.elements].filter(item=>{
+            // Return found item in new array 
+            let element = [...this.formEl.elements].filter(item=>{
+                if(item.name == 'photo'){
+                    return item;
+                }
+            });
 
-            if(item.name == 'photo'){
-                return item;
+            // Get file uploaded
+            let file = element[0].files[0];
+
+            // When loading is finished 
+            fileReader.onload = () => {
+                resolve(fileReader.result);
+            };
+
+            fileReader.onerror = (e) => {
+                reject(e);
             }
-        })
 
-        console.log(element);
-        // When load image 
-        fileReader.onload = () => {
+            if(file){ // if exists file, reads the url else return photo no-image 
+                fileReader.readAsDataURL(file);
+            }else{
+                resolve('dist/img/boxed-bg.jpg');
+            }
 
-        };
-
-        fileReader.readAsDataURL();
+        });
     }
 
     getValues(){
@@ -57,7 +91,10 @@ class UserController{
                 if(field.checked){
                     user[field.name] = field.value;
                 }
-            }else{
+            }else if(field.name == 'admin'){
+                user[field.name] = field.checked;
+            }
+            else{
                 user[field.name] = field.value;
             }
         });
@@ -77,21 +114,24 @@ class UserController{
     // HTML formater
     AddLine(dataUser){
        
-        this.tableEl.innerHTML += `
-        <tr>
+        //    this.tableEl.innerHTML += `
+        let tr = document.createElement("tr");
+        tr.innerHTML = 
+        `
             <td>
                 <img src="${dataUser.photo}" class="img-circle img-sm">
             </td>
             <td>${dataUser.name}</td>
             <td>${dataUser.email}</td>
-            <td>${dataUser.admin}</td>
+            <td>${(dataUser.admin) ? 'Sim' : 'Não'}</td>
             <td>${dataUser.birth}</td>
             <td>
                 <button type="button" class="btn btn-primary btn-xs btn-flat">Editar</button>
                 <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
             </td>
-    </tr>`;
+        `;
     
+        this.tableEl.appendChild(tr);
     };
 
 
