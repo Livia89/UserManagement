@@ -12,10 +12,39 @@ class UserController{
 
         this.formEl.addEventListener("submit", e => {
             e.preventDefault();
+
+            let values = this.getValues();
+            
+            // rewrite image 
+            values.photo = "";
+
+            this.getPhoto();
+
             // Add Line on table for each user
-            this.AddLine(this.getValues());        
+            this.AddLine(values);        
         });
 
+    }
+
+
+    getPhoto(){
+        // instance object FileReader 
+        let fileReader = new FileReader();
+
+        let element = [...this.formEl.elements].filter(item=>{
+
+            if(item.name == 'photo'){
+                return item;
+            }
+        })
+
+        console.log(element);
+        // When load image 
+        fileReader.onload = () => {
+
+        };
+
+        fileReader.readAsDataURL();
     }
 
     getValues(){
@@ -47,7 +76,7 @@ class UserController{
 
     // HTML formater
     AddLine(dataUser){
-        console.log(this.tableEl);
+       
         this.tableEl.innerHTML += `
         <tr>
             <td>
