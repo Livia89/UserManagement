@@ -1,10 +1,12 @@
 class UserController{
     
     /* Constructor to initialize the form variables and call onSubmit() */ 
-    constructor(formId, tableId){
-        this.formEl = document.getElementById(formId);
+    constructor(formIdCreate, formIdUpdate, tableId){
+        this.formEl = document.getElementById(formIdCreate);
+        this.formUpdateEl = document.getElementById(formIdUpdate);
         this.tableEl = document.getElementById(tableId);
         this.onSubmit();
+        this.onEdit();
     }
 
     /* Function for wait for the click on the submit button */
@@ -16,11 +18,11 @@ class UserController{
             let btnSubmit = this.formEl.querySelector("[type='submit']"); 
             btnSubmit.disabled = true;
 
-            let values = this.getValues();
+            let values = this.getValues(this.formEl);
             if(!values) return false;
             
                 // the Then method accepts two functions like arguments for to callback from resolve and reject  
-                this.getPhoto().then(
+                this.getPhoto(this.formEl).then(
                         (content) => { // Resolve
                         
                             // Change value photo
@@ -48,8 +50,93 @@ class UserController{
 
     }
 
+    onEdit(){
+        document.querySelector("#box-user-update .btn-cancel").addEventListener("click", e=>{   
+            this.showPanelCreate();
+        });
 
-    getPhoto(){
+        this.formUpdateEl.addEventListener("submit", e=>{
+            e.preventDefault();
+
+            let btnSubmit = this.formUpdateEl.querySelector("[type='submit']"); 
+            btnSubmit.disabled = true;
+
+            let values = this.getValues(this.formUpdateEl);
+
+            let index = this.formUpdateEl.dataset.trIndex;
+            let tr = this.tableEl.rows[index];
+
+            // Convert json in obj
+            let userOld = JSON.parse(tr.dataset.user);
+
+            // Copy old obj to new with data
+            let resultCombinationObjs = Object.assign({}, userOld, values); // return one object  {} , left object subscribe of right  
+            
+      
+
+               // the Then method accepts two functions like arguments for to callback from resolve and reject  
+               this.getPhoto(this.formUpdateEl).then(
+                    (content) => { // Resolve
+                            
+                        if(!values.photo){
+                            resultCombinationObjs._photo = userOld._photo;
+                        }else{
+                            resultCombinationObjs._photo = content;
+                        }
+
+                        // Convert obj in json and set data in html [data-user]
+                        tr.dataset.user = JSON.stringify(resultCombinationObjs);
+
+                        tr.innerHTML = 
+                        `
+                            <td>
+                                <img src="${resultCombinationObjs._photo}" class="img-circle img-sm">
+                            </td>
+                            <td>${resultCombinationObjs._name}</td>
+                            <td>${resultCombinationObjs._email}</td>
+                            <td>${(resultCombinationObjs._admin) ? 'Sim' : 'Não'}</td>
+                            <td>${Utils.dateFormat(resultCombinationObjs._register)}</td>
+                            <td>
+                                <button type="button" class="btn btn-primary btn-edit btn-xs btn-flat">Editar</button>
+                                <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
+                            </td>
+                        `;
+
+                        this.addEventsTr(tr);
+
+                        this.updateCount();
+
+                        // Restart fields form
+                        this.formUpdateEl.reset();
+                        
+                        // after add the line, activate submit button
+                        btnSubmit.disabled = false;   
+
+                        this.showPanelCreate();
+                    }, // Reject
+                        e => {
+                            // Show error
+                            console.error(e);
+                        }
+                );
+        });
+    }
+
+    onDelete(){
+
+    }
+
+    showPanelCreate(){
+        document.querySelector("#box-user-create").style.display = "block";
+        document.querySelector("#box-user-update").style.display = "none";
+    }
+
+    showPanelUpdate(){
+        document.querySelector("#box-user-create").style.display = "none";
+        document.querySelector("#box-user-update").style.display = "block";
+    }
+
+    getPhoto(formEl){
         
         // Promise because the filereader to use methods asynchronous, and promise return two states for result ok or reject
         return new Promise((resolve, reject) => { 
@@ -58,7 +145,7 @@ class UserController{
             let fileReader = new FileReader();
 
             // Return found item in new array 
-            let element = [...this.formEl.elements].filter(item=>{
+            let element = [...formEl.elements].filter(item=>{
                 if(item.name == 'photo'){
                     return item;
                 }
@@ -85,12 +172,12 @@ class UserController{
         });
     }
 
-    getValues(){
+    getValues(formEl){
 
         let user = {};
         let isValid = true;
         //Iterator of form elements
-        [...this.formEl.elements].forEach(function (field, idx) {
+        [...formEl.elements].forEach(function (field, idx) {
           
             // Check required fields is empty 
             if(['name', 'email', 'password'].indexOf(field.name) > -1 && !field.value){
@@ -98,8 +185,6 @@ class UserController{
                 isValid = false;
                 return false;
             }
-
-
 
             if(field.name == 'gender'){
                 if(field.checked){
@@ -129,7 +214,6 @@ class UserController{
         );
  }
 
-
     // HTML formater
     AddLine(dataUser){
        
@@ -149,15 +233,74 @@ class UserController{
             <td>${(dataUser.admin) ? 'Sim' : 'Não'}</td>
             <td>${Utils.dateFormat(dataUser.register)}</td>
             <td>
-                <button type="button" class="btn btn-primary btn-xs btn-flat">Editar</button>
-                <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
+                <button type="button" class="btn btn-primary btn-edit btn-xs btn-flat">Editar</button>
+                <button type="button" class="btn btn-danger btn-delete btn-xs btn-flat">Excluir</button>
             </td>
         `;
-    
+        
+        this.addEventsTr(tr);
         this.tableEl.appendChild(tr);
         
         this.updateCount();
     };
+
+    addEventsTr(tr){
+        
+        tr.querySelector(".btn-delete").addEventListener('click', (e) => {
+            if(confirm('Are you sure?')){
+               tr.remove(); // Delete a row [tr]
+               this.updateCount();
+            }
+
+            e.preventDefault();
+        });
+
+        // Add event click at each button  
+        tr.querySelector(".btn-edit").addEventListener('click', e=> {
+
+            // Recover data-user from tr 
+            let userData = JSON.parse(tr.dataset.user);
+            
+            
+            this.formUpdateEl.dataset.trIndex = tr.sectionRowIndex;
+
+            // Search and fill fields
+            for(let data in userData){
+                let field = this.formUpdateEl.querySelector("[name=" + data.replace('_', '') + "]");
+                
+                
+                if(field){
+                    
+                    switch (field.type) {
+                        case 'file':
+                                continue;
+                            break;
+                    
+                        case 'radio':
+                                field = this.formUpdateEl.querySelector("[name=" + data.replace('_', '') + "][value="+userData[data]+"]");
+                                field.checked = true;
+                            break;
+                    
+                        case 'checkbox':
+                                field.checked = userData[data];
+                            break;
+                    
+                        default:
+                            field.value = userData[data];
+                          
+                    }
+
+                    
+                }
+
+            }
+
+            this.formUpdateEl.querySelector(".image").src = userData._photo;
+
+            this.showPanelUpdate();
+        });
+
+    }
 
     updateCount(){
 
