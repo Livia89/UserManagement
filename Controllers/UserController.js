@@ -7,6 +7,7 @@ class UserController{
         this.tableEl = document.getElementById(tableId);
         this.onSubmit();
         this.onEdit();
+        this.selectAll();
     }
 
     /* Function for wait for the click on the submit button */
@@ -28,9 +29,11 @@ class UserController{
                             // Change value photo
                             values.photo = content;
                         
+                            this.insert(values);
                             
                             // Add Line on table for each user
                             this.AddLine(values);  
+
 
                             // Restart fields form
                             this.formEl.reset();
@@ -84,25 +87,11 @@ class UserController{
                             resultCombinationObjs._photo = content;
                         }
 
-                        // Convert obj in json and set data in html [data-user]
-                        tr.dataset.user = JSON.stringify(resultCombinationObjs);
+                        let user = new User();
+                        
+                        user.loadFromJSON(resultCombinationObjs);
 
-                        tr.innerHTML = 
-                        `
-                            <td>
-                                <img src="${resultCombinationObjs._photo}" class="img-circle img-sm">
-                            </td>
-                            <td>${resultCombinationObjs._name}</td>
-                            <td>${resultCombinationObjs._email}</td>
-                            <td>${(resultCombinationObjs._admin) ? 'Sim' : 'Não'}</td>
-                            <td>${Utils.dateFormat(resultCombinationObjs._register)}</td>
-                            <td>
-                                <button type="button" class="btn btn-primary btn-edit btn-xs btn-flat">Editar</button>
-                                <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
-                            </td>
-                        `;
-
-                        this.addEventsTr(tr);
+                        this.getTR(user, tr);
 
                         this.updateCount();
 
@@ -214,15 +203,58 @@ class UserController{
         );
  }
 
-    // HTML formater
-    AddLine(dataUser){
-       
-        //    this.tableEl.innerHTML += `
-        let tr = document.createElement("tr");
+    getUsersStorage(){
 
-        // Save data of user for to use in another method
+        let users = [];
+      /*  
+        if(sessionStorage.getItem("users")){
+            users = JSON.parse(sessionStorage.getItem("users"));
+        }*/
+
+        if(localStorage.getItem("users")){
+            users = JSON.parse(localStorage.getItem("users"));
+        }
+
+        return users;
+    }
+
+    selectAll(){
+        
+        
+        let users = this.getUsersStorage();
+        
+        users.forEach( userData => {
+            let user = new User();
+           
+            user.loadFromJSON(userData);
+
+            this.AddLine(user);
+        });
+    }
+
+    insert(data){
+        
+        // parse - convert json in array or obj | stringfy - convert array or object in obj json 
+        
+
+        let users = this.getUsersStorage();
+        users.push(data);
+
+        /* sessionStorage.setItem("users", JSON.stringify(users));*/
+
+        localStorage.setItem("users", JSON.stringify(users));
+    }
+
+
+    getTR(dataUser, tr = null){
+      
+        if(tr == null) tr = document.createElement("tr");
+
+        // Save data in html [data-user] of user for to use in another method
         tr.dataset.user = JSON.stringify(dataUser);
+        
 
+        //    this.tableEl.innerHTML += `
         tr.innerHTML = 
         `
             <td>
@@ -237,9 +269,18 @@ class UserController{
                 <button type="button" class="btn btn-danger btn-delete btn-xs btn-flat">Excluir</button>
             </td>
         `;
-        
+
         this.addEventsTr(tr);
-        this.tableEl.appendChild(tr);
+
+        return tr;
+
+
+    }
+
+    // HTML formater - Add Line on screen 
+    AddLine(dataUser){
+       
+        this.tableEl.appendChild(this.getTR(dataUser));
         
         this.updateCount();
     };
