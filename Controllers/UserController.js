@@ -29,7 +29,7 @@ class UserController{
                             // Change value photo
                             values.photo = content;
                         
-                            this.insert(values);
+                            values.save();
                             
                             // Add Line on table for each user
                             this.AddLine(values);  
@@ -75,7 +75,7 @@ class UserController{
             // Copy old obj to new with data
             let resultCombinationObjs = Object.assign({}, userOld, values); // return one object  {} , left object subscribe of right  
             
-       
+              
                // the Then method accepts two functions like arguments for to callback from resolve and reject  
                this.getPhoto(this.formUpdateEl).then(
                     (content) => { // Resolve
@@ -89,6 +89,8 @@ class UserController{
                         let user = new User();
 
                         user.loadFromJSON(resultCombinationObjs);
+                        
+                        user.save();
 
                         this.getTR(user, tr);
 
@@ -166,7 +168,7 @@ class UserController{
         let isValid = true;
         //Iterator of form elements
         [...formEl.elements].forEach(function (field, idx) {
-          
+            
             // Check required fields is empty 
             if(['name', 'email', 'password'].indexOf(field.name) > -1 && !field.value){
                 field.parentElement.classList.add("has-error");
@@ -184,12 +186,13 @@ class UserController{
             else{
                 user[field.name] = field.value;
             }
+            
         });
-
         if(!isValid){
+            
             return false;
         }  
-
+        
         return new User(
             user.name,
             user.gender,
@@ -229,19 +232,6 @@ class UserController{
 
             this.AddLine(user);
         });
-    }
-
-    insert(data){
-        
-        // parse - convert json in array or obj | stringfy - convert array or object in obj json 
-        
-
-        let users = this.getUsersStorage();
-        users.push(data);
-
-        /* sessionStorage.setItem("users", JSON.stringify(users));*/
-
-        localStorage.setItem("users", JSON.stringify(users));
     }
 
 
@@ -287,6 +277,7 @@ class UserController{
     addEventsTr(tr){
         
         tr.querySelector(".btn-delete").addEventListener('click', (e) => {
+            console.log(this, tr, e);
             if(confirm('Are you sure?')){
                tr.remove(); // Delete a row [tr]
                this.updateCount();
