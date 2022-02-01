@@ -75,8 +75,7 @@ class UserController{
             // Copy old obj to new with data
             let resultCombinationObjs = Object.assign({}, userOld, values); // return one object  {} , left object subscribe of right  
             
-      
-
+       
                // the Then method accepts two functions like arguments for to callback from resolve and reject  
                this.getPhoto(this.formUpdateEl).then(
                     (content) => { // Resolve
@@ -88,7 +87,7 @@ class UserController{
                         }
 
                         let user = new User();
-                        
+
                         user.loadFromJSON(resultCombinationObjs);
 
                         this.getTR(user, tr);
